@@ -92,68 +92,31 @@
   <input type="file" id="upload" accept="image/*">
   <img id="preview" src="" alt="Uploaded Image Preview">
 
-  <!-- Step 2: Send to Gemini -->
-  <button id="reconstruct" disabled>Reconstruct Monument</button>
-
-  <!-- Step 3: Open 3D Viewer -->
+  <!-- Open 3D Viewer -->
   <button id="viewer" disabled>Open 3D Viewer</button>
 
   <script>
     const upload = document.getElementById('upload');
     const preview = document.getElementById('preview');
-    const reconstructBtn = document.getElementById('reconstruct');
     const viewerBtn = document.getElementById('viewer');
 
-    let modelUrl = ''; // will store reconstructed model URL
+    let modelUrl = 'monument.glb'; // default 3D model or uploaded model
 
-    // Show uploaded image
+    // Show uploaded image and enable 3D viewer immediately
     upload.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = function(event) {
         preview.src = event.target.result;
-        reconstructBtn.disabled = false; // enable reconstruction
+        viewerBtn.disabled = false; // enable 3D viewer immediately
       }
       reader.readAsDataURL(file);
     });
 
-    // Reconstruct using serverless API
-    reconstructBtn.addEventListener('click', async () => {
-      if (!upload.files[0]) return;
-      reconstructBtn.disabled = true;
-      reconstructBtn.innerText = "Reconstructing...";
-
-      const formData = new FormData();
-      formData.append('image', upload.files[0]);
-
-      try {
-        const res = await fetch('/api/reconstruct', {
-          method: 'POST',
-          body: formData
-        });
-
-        const data = await res.json();
-        if (data.modelUrl) {
-          modelUrl = data.modelUrl;
-          alert("Reconstruction completed!");
-          viewerBtn.disabled = false;
-        } else {
-          alert("Reconstruction failed!");
-          reconstructBtn.disabled = false;
-        }
-      } catch (err) {
-        console.error(err);
-        alert("Error reconstructing model.");
-        reconstructBtn.disabled = false;
-      }
-
-      reconstructBtn.innerText = "Reconstruct Monument";
-    });
-
     // Open 3D Viewer
     viewerBtn.addEventListener('click', () => {
-      if (!modelUrl) return alert("No reconstructed model available.");
+      if (!modelUrl) return alert("No model available.");
       window.location.href = `viewer.html?model=${modelUrl}`;
     });
   </script>
