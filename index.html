@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monument Reconstruction Demo</title>
+  <style>
+    /* Global Styles */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(to bottom, #f0f4f8, #d9e2ec);
+      color: #333;
+    }
+
+    h1 {
+      margin-top: 20px;
+      margin-bottom: 30px;
+      font-size: 2rem;
+      color: #1f2937;
+      text-align: center;
+    }
+
+    #preview {
+      margin-top: 20px;
+      max-width: 400px;
+      max-height: 300px;
+      border: 3px solid #4f46e5;
+      border-radius: 10px;
+      object-fit: contain;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease;
+    }
+
+    #preview:hover { transform: scale(1.05); }
+
+    button {
+      padding: 12px 24px;
+      margin-top: 15px;
+      border: none;
+      border-radius: 8px;
+      background: #4f46e5;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    button:disabled {
+      background: #a5b4fc;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    button:hover:not(:disabled) {
+      background: #4338ca;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+    }
+
+    input[type="file"] {
+      margin-top: 20px;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      cursor: pointer;
+      background: white;
+      font-size: 1rem;
+    }
+
+    input[type="file"]:hover { border-color: #4f46e5; }
+
+    @media (max-width: 600px) {
+      #preview { max-width: 90%; max-height: 200px; }
+      button { width: 80%; font-size: 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Old Monument Reconstruction</h1>
+
+  <!-- Step 1: Upload Image -->
+  <input type="file" id="upload" accept="image/*">
+  <img id="preview" src="" alt="Uploaded Image Preview">
+
+  <!-- Step 2: Send to Gemini -->
+  <button id="reconstruct" disabled>Reconstruct Monument</button>
+
+  <!-- Step 3: Open 3D Viewer -->
+  <button id="viewer" disabled>Open 3D Viewer</button>
+
+  <script>
+    const upload = document.getElementById('upload');
+    const preview = document.getElementById('preview');
+    const reconstructBtn = document.getElementById('reconstruct');
+    const viewerBtn = document.getElementById('viewer');
+
+    let modelUrl = ''; // will store reconstructed model URL
+
+    // Show uploaded image
+    upload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        preview.src = event.target.result;
+        reconstructBtn.disabled = false; // enable reconstruction
+      }
+      reader.readAsDataURL(file);
+    });
+
+    // Reconstruct using serverless API
+    reconstructBtn.addEventListener('click', async () => {
+      if (!upload.files[0]) return;
+      reconstructBtn.disabled = true;
+      reconstructBtn.innerText = "Reconstructing...";
+
+      const formData = new FormData();
+      formData.append('image', upload.files[0]);
+
+      try {
+        const res = await fetch('/api/reconstruct', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await res.json();
+        if (data.modelUrl) {
+          modelUrl = data.modelUrl;
+          alert("Reconstruction completed!");
+          viewerBtn.disabled = false;
+        } else {
+          alert("Reconstruction failed!");
+          reconstructBtn.disabled = false;
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Error reconstructing model.");
+        reconstructBtn.disabled = false;
+      }
+
+      reconstructBtn.innerText = "Reconstruct Monument";
+    });
+
+    // Open 3D Viewer
+    viewerBtn.addEventListener('click', () => {
+      if (!modelUrl) return alert("No reconstructed model available.");
+      window.location.href = `viewer.html?model=${modelUrl}`;
+    });
+  </script>
+
+</body>
+</html>
